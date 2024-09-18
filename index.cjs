@@ -49,20 +49,47 @@ app
         const user = users.find((user) => user.id === id);
         return res.json(user)
     }).patch((req, res) => {
-        // Todo Edit the user by id
-        return res.json({ status: 'Pending' })
+        const id = Number(req.params.id);
+        const { first_name, last_name, email, gender, job_title } = req.body;  // Example user fields
+
+        // Find the user by ID
+        const userIndex = users.findIndex(user => user.id === id);
+
+        if (userIndex === -1) {
+            return res.status(404).json({ message: `User with id:${id} not found` });
+        }
+
+        // Update the user's data
+        const updatedUser = {
+            ...users[userIndex],
+            first_name: first_name || users[userIndex].first_name,
+            last_name: last_name || users[userIndex].last_name,
+            email: email || users[userIndex].email,
+            gender: gender || users[userIndex].gender,
+            job_title: job_title || users[userIndex].job_title
+        };
+
+        // Replace the old user with the updated user
+        users[userIndex] = updatedUser;
+
+        // Write the updated users list to the JSON file
+        fs.writeFile('./assets/users.json', JSON.stringify(users), (error) => {
+            if (error) {
+                return res.status(500).json({ message: 'Failed to update user' });
+            }
+            res.status(200).json({ message: `User with id:${id} updated successfully`, user: updatedUser });
+        });
+
     }).delete((req, res) => {
         const id = Number(req.params.id)
         const user = users.find((user) => user.id === id)
-        if (user) {
-            const newUsers = users.filter((user) => user.id !== id)
-            fs.writeFile('./assets/users.json', JSON.stringify(newUsers), (error, data) => {
-                res.status(200).json({ status: 'ok', message: `User with id:${id} is deleted..`, });
-            })
+        if (!user) {
+            res.status(404).json({ message: `User with id:${id} is not found` })
         }
-        else {
-            res.status(200).json({ message: `User with id:${id} is not found` })
-        }
+        const newUsers = users.filter((user) => user.id !== id)
+        fs.writeFile('./assets/users.json', JSON.stringify(newUsers), (error, data) => {
+            res.status(200).json({ status: 'ok', message: `User with id:${id} is deleted..`, });
+        })
     });
 
 
